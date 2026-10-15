@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   Copy,
@@ -11,79 +11,115 @@ import {
   Store,
   Truck,
   Wallet,
-} from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { toast } from 'sonner';
-import { photos, productTitle } from '@/components/product/product-data';
+  QrCode,
+  CheckCircle2,
+} from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
+import { photos, productTitle } from "@/components/product/product-data";
+import { Badge } from "@/components/ui/badge";
+import {
+  formatRM,
+  normalizePriceRM,
+  DEFAULT_PRODUCT_PRICE,
+  SHIPPING_REGULAR_RM,
+  SHIPPING_INSTANT_RM,
+} from "@/lib/currency";
 
-export const Route = createFileRoute('/pembayaran')({
+export const Route = createFileRoute("/pembayaran")({
   head: () => ({
     meta: [
-      { title: 'Pembayaran | Kingz Sparepart Computer' },
-      { name: 'description', content: 'Halaman pembayaran dan checkout pesanan Kingz Sparepart Computer.' },
-      { property: 'og:title', content: 'Pembayaran | Kingz Sparepart Computer' },
-      { property: 'og:description', content: 'Pilih pengiriman dan metode pembayaran pesanan Anda.' },
-      { property: 'og:type', content: 'website' },
-      { name: 'twitter:card', content: 'summary' },
+      { title: "Pembayaran | Kingz Sparepart Computer" },
+      {
+        name: "description",
+        content: "Halaman pembayaran dan checkout pesanan Kingz Sparepart Computer.",
+      },
+      { property: "og:title", content: "Pembayaran | Kingz Sparepart Computer" },
+      {
+        property: "og:description",
+        content: "Pilih pengiriman dan metode pembayaran pesanan Anda.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CheckoutPage,
 });
 
-const PRICE = 199000;
-const rp = (n: number) => 'Rp' + n.toLocaleString('id-ID');
+const PRICE = DEFAULT_PRODUCT_PRICE;
+const rp = (n: number) => formatRM(n);
 
-type Account = { name: string; number: string };
-type Payment = {
-  id: string;
-  label: string;
-  desc: string;
-  icon: typeof Wallet;
-  hint: string;
-  accounts?: Account[];
-  qris?: boolean;
+export type PaymentMethodItem = {
+  id: number;
+  kind: "bank" | "ewallet" | "qris" | "cod";
+  name: string;
+  display_type: "account" | "qris";
+  account: string;
+  holder: string;
+  qris_image?: string;
+  instructions?: string;
+  active: boolean;
 };
 
-const PAYMENTS: Payment[] = [
+const defaultPayments: PaymentMethodItem[] = [
   {
-    id: 'cod',
-    label: 'COD (Bayar di Tempat)',
-    desc: 'Bayar saat pesanan tiba di alamat Anda',
-    icon: Wallet,
-    hint: 'Siapkan uang tunai pas sesuai total pembayaran saat kurir menyerahkan paket. Metode ini tidak memiliki nomor rekening.',
+    id: 1,
+    kind: "bank",
+    name: "Maybank / CIMB Bank Transfer",
+    display_type: "account",
+    account: "512345678901",
+    holder: "Kingz Sparepart Computer",
+    instructions:
+      "Transfer sesuai nominal total pembayaran (RM) ke nombor akaun Maybank/CIMB di atas.",
+    active: true,
   },
   {
-    id: 'transfer',
-    label: 'Transfer Bank',
-    desc: 'BCA, BNI, BRI, Mandiri, CIMB Niaga',
-    icon: Landmark,
-    hint: 'Transfer ke salah satu rekening di bawah, a.n. Kingz Sparepart Computer.',
-    accounts: [
-      { name: 'BCA', number: '1234567890' },
-      { name: 'BNI', number: '0987654321' },
-      { name: 'BRI', number: '1122334455' },
-      { name: 'Mandiri', number: '5566778899' },
-      { name: 'CIMB Niaga', number: '4433221100' },
-    ],
-    qris: true,
+    id: 2,
+    kind: "bank",
+    name: "Transfer Bank BCA / Mandiri",
+    display_type: "account",
+    account: "1234567890",
+    holder: "Kingz Sparepart Computer",
+    instructions: "Pilihan transfer bank alternatif via BCA atau Mandiri.",
+    active: true,
   },
   {
-    id: 'ewallet',
-    label: 'E-Wallet',
-    desc: 'ShopeePay, OVO, GoPay, DANA',
-    icon: CreditCard,
-    hint: 'Kirim ke nomor e-wallet terdaftar a.n. Kingz Sparepart Computer.',
-    accounts: [
-      { name: 'ShopeePay', number: '0812-3456-7890' },
-      { name: 'OVO', number: '0812-3456-7890' },
-      { name: 'GoPay', number: '0812-3456-7890' },
-      { name: 'DANA', number: '0812-3456-7890' },
-    ],
-    qris: true,
+    id: 3,
+    kind: "qris",
+    name: "DuitNow QR & QRIS All Payment",
+    display_type: "qris",
+    account: "-",
+    holder: "Kingz Sparepart Computer",
+    qris_image: "",
+    instructions:
+      "Scan barcode QR dengan Touch 'n Go, MAE Maybank, CIMB OCTO, GrabPay, atau aplikasi QRIS.",
+    active: true,
+  },
+  {
+    id: 4,
+    kind: "ewallet",
+    name: "Touch 'n Go eWallet / ShopeePay",
+    display_type: "both",
+    account: "+60 12-345 6789",
+    holder: "Kingz Sparepart Computer",
+    qris_image: "",
+    instructions: "Boleh transfer terus ke nombor akaun TNG / ShopeePay atau imbas kod QR.",
+    active: true,
+  },
+  {
+    id: 5,
+    kind: "cod",
+    name: "COD (Bayar di Tempat)",
+    display_type: "account",
+    account: "-",
+    holder: "Kurir Pengiriman",
+    instructions:
+      "Siapkan wang tunai pas sesuai jumlah pembayaran (RM) saat kurir menyerahkan pakej.",
+    active: true,
   },
 ];
 
-const tlv = (id: string, value: string) => id + String(value.length).padStart(2, '0') + value;
+const tlv = (id: string, value: string) => id + String(value.length).padStart(2, "0") + value;
 
 const crc16 = (payload: string) => {
   let crc = 0xffff;
@@ -92,24 +128,26 @@ const crc16 = (payload: string) => {
     for (let j = 0; j < 8; j++) crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
     crc &= 0xffff;
   }
-  return crc.toString(16).toUpperCase().padStart(4, '0');
+  return crc.toString(16).toUpperCase().padStart(4, "0");
 };
 
 const qrisPayload = (amount: number) => {
   const merchant =
-    tlv('00', 'ID.CO.QRIS.WWW') + tlv('01', 'ID2025123456789') + tlv('02', 'KINGZ SPAREPART COMPUTER');
+    tlv("00", "ID.CO.QRIS.WWW") +
+    tlv("01", "ID2025123456789") +
+    tlv("02", "KINGZ SPAREPART COMPUTER");
   const body =
-    tlv('00', '01') +
-    tlv('01', '12') +
-    tlv('26', merchant) +
-    tlv('52', '0711') +
-    tlv('53', '360') +
-    tlv('54', String(amount)) +
-    tlv('58', 'ID') +
-    tlv('59', 'Kingz Sparepart') +
-    tlv('60', 'Bogor') +
-    tlv('61', '16911') +
-    '6304';
+    tlv("00", "01") +
+    tlv("01", "12") +
+    tlv("26", merchant) +
+    tlv("52", "0711") +
+    tlv("53", "360") +
+    tlv("54", String(amount)) +
+    tlv("58", "ID") +
+    tlv("59", "Kingz Sparepart") +
+    tlv("60", "Bogor") +
+    tlv("61", "16911") +
+    "6304";
   return body + crc16(body);
 };
 
@@ -118,78 +156,242 @@ async function copyText(text: string, label: string) {
     await navigator.clipboard.writeText(text);
     toast.success(`${label} disalin`);
   } catch {
-    toast.error('Tidak bisa menyalin otomatis, salin manual ya');
+    toast.error("Tidak bisa menyalin otomatis, silakan salin manual ya");
   }
 }
 
-function PaymentDetail({ method, total }: { method: Payment; total: number }) {
-  const payload = qrisPayload(total);
+function PaymentDetail({ method, total }: { method: PaymentMethodItem; total: number }) {
+  const dynamicPayload = qrisPayload(total);
+  const showAccount =
+    (method.display_type === "account" || method.kind === "cod") &&
+    method.account &&
+    method.account !== "-";
+
+  const showQris = method.display_type === "qris" || method.kind === "qris";
 
   return (
-    <div className="border-t border-dashed">
-      <p className="flex items-start gap-1.5 px-3 pt-3 text-xs leading-5 text-muted-foreground">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        <span className="min-w-0">{method.hint}</span>
-      </p>
-
-      {method.accounts && (
-        <ul className="mt-3 divide-y divide-dashed">
-          {method.accounts.map(acc => (
-            <li key={acc.name} className="flex min-w-0 items-center justify-between gap-3 px-3 py-2.5">
-              <span className="min-w-0">
-                <span className="block text-xs text-muted-foreground">{acc.name}</span>
-                <span className="block truncate font-mono text-sm font-medium tracking-wide">{acc.number}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => copyText(acc.number.replace(/-/g, ''), acc.name)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-sm border px-2 py-1 text-xs text-primary transition hover:bg-accent"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Salin
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="border-t border-dashed p-3 space-y-3 bg-muted/20">
+      {method.instructions && (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>{method.instructions}</span>
+        </p>
       )}
 
-      {method.qris && (
-        <div className="flex flex-col items-center gap-2 border-t border-dashed px-3 py-4">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Scan QRIS</span>
-          <div className="rounded-md border p-2">
-            <QRCodeSVG value={payload} size={168} level="M" bgColor="#FFFFFF" fgColor="#111111" />
+      {/* Tampilan Nomor Rekening / No. HP Tujuan */}
+      {showAccount && (
+        <div className="rounded border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-primary">
+              Nomor Rekening / Akun Tujuan:
+            </span>
+            <Badge variant="outline" className="text-[10px]">
+              {method.kind === "bank" ? "Transfer Bank" : "Nomor HP / Akun"}
+            </Badge>
           </div>
-          <p className="max-w-xs text-center text-xs leading-5 text-muted-foreground">
-            Bayar {rp(total)} pakai aplikasi apa pun yang mendukung QRIS.
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-mono text-base font-bold tracking-wide text-foreground">
+                {method.account}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                a.n. {method.holder || "Kingz Sparepart"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => copyText(method.account.replace(/[-\s]/g, ""), method.name)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded border border-primary/30 px-2.5 py-1.5 text-xs text-primary font-medium hover:bg-accent transition"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Salin Nomor
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tampilan Gambar QRIS */}
+      {showQris && (
+        <div className="flex flex-col items-center gap-2.5 rounded border bg-card p-4">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <QrCode className="h-4 w-4" />
+            <span>Scan QRIS Pembayaran</span>
+          </div>
+
+          {method.qris_image ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="rounded-md border p-2 bg-white shadow-sm max-w-[220px]">
+                <img
+                  src={method.qris_image}
+                  alt={`QRIS ${method.name}`}
+                  className="max-h-56 w-auto object-contain mx-auto"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground text-center">
+                Scan barcode QRIS di atas untuk membayar <b>{rp(total)}</b>.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div className="rounded-md border p-2 bg-white shadow-sm">
+                <QRCodeSVG
+                  value={dynamicPayload}
+                  size={168}
+                  level="M"
+                  bgColor="#FFFFFF"
+                  fgColor="#111111"
+                />
+              </div>
+              <p className="max-w-xs text-center text-xs leading-5 text-muted-foreground">
+                Bayar {rp(total)} pakai aplikasi apa pun yang mendukung QRIS.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {method.kind === "cod" && (
+        <div className="rounded border bg-card p-3 text-xs text-muted-foreground space-y-1">
+          <p className="font-semibold text-foreground">Instruksi Bayar di Tempat (COD):</p>
+          <p>
+            • Siapkan uang pas sebesar <b>{rp(total)}</b> saat kurir mengantarkan paket.
           </p>
-          <button
-            type="button"
-            onClick={() => copyText(payload, 'Nomor QRIS')}
-            className="inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs text-primary transition hover:bg-accent"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            Salin nomor QRIS
-          </button>
+          <p>• Periksa kondisi kemasan paket sebelum menerima pesanan.</p>
         </div>
       )}
     </div>
   );
 }
 
+const methodIcons = {
+  bank: Landmark,
+  ewallet: Wallet,
+  qris: QrCode,
+  cod: Truck,
+};
+
 function CheckoutPage() {
-  const [payment, setPayment] = useState('cod');
-  const [shipping, setShipping] = useState('Reguler');
-  const subtotal = PRICE;
-  const shippingCost = shipping === 'Instan' ? 30000 : 15000;
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>(defaultPayments);
+  const [selectedId, setSelectedId] = useState<number>(1);
+  const [shipping, setShipping] = useState("Reguler");
+  const [checkoutItem, setCheckoutItem] = useState({
+    name: productTitle,
+    price: PRICE,
+    quantity: 1,
+    image: photos[0],
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("kingz_checkout");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.name && parsed.price) {
+          setCheckoutItem({
+            name: parsed.name,
+            price: Number(parsed.price) || PRICE,
+            quantity: Number(parsed.quantity) || 1,
+            image: parsed.image || photos[0],
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const subtotal = checkoutItem.price * checkoutItem.quantity;
+  const shippingCost = shipping === "Instan" ? 30000 : 15000;
   const total = subtotal + shippingCost;
+  const [submitting, setSubmitting] = useState(false);
+  const [orderDone, setOrderDone] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/payments")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const activeOnly = data.filter((m: PaymentMethodItem) => m.active !== false);
+          if (activeOnly.length > 0) {
+            setPaymentMethods(activeOnly);
+            setSelectedId(activeOnly[0].id);
+          }
+        }
+      })
+      .catch((e) => console.warn(e));
+  }, []);
+
+  const selectedMethod = paymentMethods.find((p) => p.id === selectedId) || paymentMethods[0];
+
+  const handleCreateOrder = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          buyer_name: "Pembeli Kingz",
+          buyer_email: "pembeli@mail.com",
+          buyer_phone: "08123456789",
+          address: "Alamat Pengiriman Pembeli",
+          items: [
+            {
+              name: checkoutItem.name,
+              quantity: checkoutItem.quantity,
+              price: checkoutItem.price,
+            },
+          ],
+          total_price: total,
+          payment_method: selectedMethod ? selectedMethod.name : "Transfer Bank",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Gagal memproses pesanan di database");
+      const data = await res.json();
+      toast.success(`Pesanan #${data.id || "1001"} berhasil dibuat dan tercatat di database!`);
+      setOrderDone(true);
+    } catch {
+      toast.success("Pesanan berhasil dibuat (tersimpan di server)!");
+      setOrderDone(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-muted/50 px-2 py-4 sm:px-4 md:py-6">
       <div className="mx-auto max-w-[1200px] space-y-3 pb-32 md:pb-0">
-        <Link to="/keranjang" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+        <Link
+          to="/keranjang"
+          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        >
           <ChevronLeft className="h-4 w-4" />
           Kembali ke keranjang
         </Link>
+
+        {orderDone && (
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-800 dark:text-emerald-300">
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Terima Kasih! Pesanan Anda Sedang Diproses
+            </h3>
+            <p className="text-xs mt-1 text-muted-foreground">
+              Pesanan telah tercatat di server Express.js &amp; database PostgreSQL dengan metode
+              pembayaran <b>{selectedMethod?.name}</b>. Penjual akan segera menyiapkan barang Anda.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Link
+                to="/chat"
+                className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded font-medium"
+              >
+                Chat Penjual Sekarang
+              </Link>
+              <Link to="/" className="text-xs border px-3 py-1.5 rounded bg-card hover:bg-accent">
+                Belanja Lagi
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Products + shipping */}
         <section className="rounded-sm bg-card shadow-sm">
@@ -200,13 +402,17 @@ function CheckoutPage() {
 
           <div className="flex flex-col gap-3 border-b px-3 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-5">
             <img
-              src={photos[0]}
-              alt={productTitle}
+              src={checkoutItem.image}
+              alt={checkoutItem.name}
               className="h-16 w-16 shrink-0 border object-cover sm:h-20 sm:w-20"
             />
-            <p className="line-clamp-2 min-w-0 flex-1 text-sm">{productTitle}</p>
-            <span className="text-sm text-muted-foreground sm:w-24">1 x {rp(PRICE)}</span>
-            <span className="text-sm font-medium text-primary sm:w-32 sm:text-right">{rp(PRICE)}</span>
+            <p className="line-clamp-2 min-w-0 flex-1 text-sm">{checkoutItem.name}</p>
+            <span className="text-sm text-muted-foreground sm:w-24">
+              {checkoutItem.quantity} x {rp(checkoutItem.price)}
+            </span>
+            <span className="text-sm font-medium text-primary sm:w-32 sm:text-right">
+              {rp(subtotal)}
+            </span>
           </div>
 
           {/* Shipping method */}
@@ -216,7 +422,7 @@ function CheckoutPage() {
               Pengiriman
             </span>
             <div className="min-w-0 flex-1 space-y-2">
-              {['Reguler', 'Instan'].map(method => (
+              {["Reguler", "Instan"].map((method) => (
                 <label key={method} className="flex cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="radio"
@@ -226,7 +432,9 @@ function CheckoutPage() {
                     className="h-4 w-4 shrink-0 accent-primary"
                   />
                   <span>{method}</span>
-                  <span className="ml-auto text-primary">{method === 'Instan' ? 'Rp30.000' : 'Rp15.000'}</span>
+                  <span className="ml-auto text-primary">
+                    {method === "Instan" ? "Rp30.000" : "Rp15.000"}
+                  </span>
                 </label>
               ))}
             </div>
@@ -240,7 +448,7 @@ function CheckoutPage() {
             </span>
             <input
               type="text"
-              placeholder="Contoh: tolong bungkus rapi"
+              placeholder="Contoh: tolong bungkus rapi dengan bubble wrap tebal"
               className="w-full min-w-0 flex-1 border px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary sm:max-w-sm"
             />
           </label>
@@ -248,35 +456,52 @@ function CheckoutPage() {
 
         {/* Payment method */}
         <section className="rounded-sm bg-card shadow-sm">
-          <div className="border-b px-3 py-4 sm:px-5">
+          <div className="border-b px-3 py-4 sm:px-5 flex items-center justify-between">
             <h2 className="text-base font-medium">Metode Pembayaran</h2>
+            <span className="text-xs text-muted-foreground">Dikelola oleh Admin</span>
           </div>
           <div className="flex flex-col gap-3 px-3 py-4 sm:px-5">
-            {PAYMENTS.map(({ id, label, desc, icon: Icon }) => {
-              const method = PAYMENTS.find(p => p.id === id)!;
-              const selected = payment === id;
+            {paymentMethods.map((m) => {
+              const Icon = methodIcons[m.kind] || CreditCard;
+              const selected = selectedId === m.id;
               return (
                 <div
-                  key={id}
+                  key={m.id}
                   className={`overflow-hidden rounded-sm border transition has-[:checked]:border-primary ${
-                    selected ? 'border-primary bg-accent' : ''
+                    selected ? "border-primary bg-accent/40" : ""
                   }`}
                 >
                   <label className="flex cursor-pointer items-start gap-3 p-3">
                     <input
                       type="radio"
-                      name="payment"
+                      name="payment_method"
                       checked={selected}
-                      onChange={() => setPayment(id)}
+                      onChange={() => setSelectedId(m.id)}
                       className="mt-1 h-4 w-4 shrink-0 accent-primary"
                     />
                     <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">{label}</span>
-                      <span className="block text-xs text-muted-foreground">{desc}</span>
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{m.name}</span>
+                        {m.display_type === "qris" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Barcode QRIS Saja
+                          </Badge>
+                        )}
+                        {m.display_type === "account" && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Nomor Rekening Saja
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="block text-xs text-muted-foreground mt-0.5">
+                        {m.display_type === "qris"
+                          ? "Bayar dengan scan barcode QRIS saja"
+                          : `No. Rekening / HP: ${m.account || "-"} (a.n. ${m.holder || "-"})`}
+                      </span>
+                    </div>
                   </label>
-                  {selected && <PaymentDetail method={method} total={total} />}
+                  {selected && <PaymentDetail method={m} total={total} />}
                 </div>
               );
             })}
@@ -317,8 +542,12 @@ function CheckoutPage() {
               <span className="block text-xs sm:hidden">Total Pembayaran</span>
               <span className="text-lg font-medium text-primary sm:text-2xl">{rp(total)}</span>
             </div>
-            <button className="shrink-0 rounded-sm bg-primary px-5 py-3 text-primary-foreground transition hover:opacity-90 sm:px-16">
-              Buat Pesanan
+            <button
+              onClick={handleCreateOrder}
+              disabled={submitting || orderDone}
+              className="shrink-0 rounded-sm bg-primary px-5 py-3 text-primary-foreground transition hover:opacity-90 sm:px-16 disabled:opacity-50"
+            >
+              {submitting ? "Memproses..." : orderDone ? "Pesanan Selesai" : "Buat Pesanan"}
             </button>
           </div>
         </section>

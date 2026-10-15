@@ -9,9 +9,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        commerce: "bg-primary text-primary-foreground border border-primary hover:bg-primary/90 rounded-sm",
-        commerceOutline: "bg-accent text-primary border border-primary/50 hover:bg-primary/10 rounded-sm",
-        filter: "bg-card text-foreground border border-border hover:border-primary hover:text-primary rounded-sm",
+        commerce:
+          "bg-primary text-primary-foreground border border-primary hover:bg-primary/90 rounded-sm",
+        commerceOutline:
+          "bg-accent text-primary border border-primary/50 hover:bg-primary/10 rounded-sm",
+        filter:
+          "bg-card text-foreground border border-border hover:border-primary hover:text-primary rounded-sm",
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:

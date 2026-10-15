@@ -1,0 +1,6 @@
+{
+  "name": "Kingz Sparepart Computer",
+  "description": "Adaptor dan sparepart komputer original dari Kingz Sparepart Computer.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

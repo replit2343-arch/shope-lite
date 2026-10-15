@@ -1,7 +1,16 @@
-import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
-import { Package, Store, Users, CreditCard, MessageCircle, Shield, LogOut, Star } from 'lucide-react';
+import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import {
+  Package,
+  Store,
+  Users,
+  CreditCard,
+  MessageCircle,
+  Shield,
+  LogOut,
+  Star,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,43 +25,54 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar';
-import { AdminShop } from '@/components/admin/shop';
-import { AdminProducts } from '@/components/admin/products';
-import { AdminUsers } from '@/components/admin/users';
-import { AdminPayments } from '@/components/admin/payments';
-import { AdminChat } from '@/components/admin/chat';
-import { AdminTestimonials } from '@/components/admin/testimonials';
+} from "@/components/ui/sidebar";
+import { AdminShop } from "@/components/admin/shop";
+import { AdminProducts } from "@/components/admin/products";
+import { AdminUsers } from "@/components/admin/users";
+import { AdminPayments } from "@/components/admin/payments";
+import { AdminChat } from "@/components/admin/chat";
+import { AdminTestimonials } from "@/components/admin/testimonials";
 
-export const Route = createFileRoute('/admin')({
-  head: () => ({ meta: [
-    { title: 'Admin | Kingz Sparepart Computer' },
-    { name: 'description', content: 'Kelola produk, user, metode pembayaran, dan chat toko Kingz Sparepart Computer.' },
-    { property: 'og:title', content: 'Admin | Kingz Sparepart Computer' },
-    { property: 'og:description', content: 'Kelola produk, user, pembayaran, dan chat toko.' },
-    { property: 'og:type', content: 'website' },
-    { name: 'twitter:card', content: 'summary' },
-    { name: 'robots', content: 'noindex' },
-  ] }),
+export const Route = createFileRoute("/admin")({
+  head: () => ({
+    meta: [
+      { title: "Admin | Kingz Sparepart Computer" },
+      {
+        name: "description",
+        content: "Kelola produk, user, metode pembayaran, dan chat toko Kingz Sparepart Computer.",
+      },
+      { property: "og:title", content: "Admin | Kingz Sparepart Computer" },
+      { property: "og:description", content: "Kelola produk, user, pembayaran, dan chat toko." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: AdminPage,
 });
 
 const sections = [
-  { id: 'toko', label: 'Toko', Icon: Store },
-  { id: 'produk', label: 'Produk', Icon: Package },
-  { id: 'user', label: 'User', Icon: Users },
-  { id: 'pembayaran', label: 'Pembayaran', Icon: CreditCard },
-  { id: 'chat', label: 'Chat', Icon: MessageCircle },
-  { id: 'testimoni', label: 'Testimoni', Icon: Star },
+  { id: "toko", label: "Toko", Icon: Store },
+  { id: "produk", label: "Produk", Icon: Package },
+  { id: "user", label: "User", Icon: Users },
+  { id: "pembayaran", label: "Pembayaran", Icon: CreditCard },
+  { id: "chat", label: "Chat", Icon: MessageCircle },
+  { id: "testimoni", label: "Testimoni", Icon: Star },
 ] as const;
 
-type SectionId = (typeof sections)[number]['id'];
+type SectionId = (typeof sections)[number]["id"];
 
-function AdminSidebar({ active, onSelect }: { active: SectionId; onSelect: (id: SectionId) => void }) {
+function AdminSidebar({
+  active,
+  onSelect,
+}: {
+  active: SectionId;
+  onSelect: (id: SectionId) => void;
+}) {
   const navigate = useNavigate();
   const logout = () => {
-    toast.success('Berhasil keluar');
-    navigate({ to: '/login' });
+    toast.success("Berhasil keluar");
+    navigate({ to: "/login" });
   };
   return (
     <Sidebar collapsible="icon">
@@ -98,26 +118,34 @@ function AdminSidebar({ active, onSelect }: { active: SectionId; onSelect: (id: 
 }
 
 function AdminPage() {
-  const [active, setActive] = useState<SectionId>('produk');
-  const currentLabel = sections.find((s) => s.id === active)?.label ?? 'Admin';
+  const [active, setActive] = useState<SectionId>("produk");
+  const currentLabel = sections.find((s) => s.id === active)?.label ?? "Admin";
 
   return (
     <SidebarProvider>
       <div className="flex min-h-[calc(100vh-80px)] w-full">
         <AdminSidebar active={active} onSelect={setActive} />
         <SidebarInset className="min-w-0 flex-1">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4">
-            <SidebarTrigger aria-label="Buka / tutup menu admin" />
-            <h1 className="text-lg font-semibold">{currentLabel}</h1>
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger aria-label="Buka / tutup menu admin" />
+              <h1 className="text-lg font-semibold">{currentLabel}</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Express.js & PostgreSQL
+              </span>
+            </div>
           </header>
           <main className="px-4 py-6">
             <div className="mx-auto w-full max-w-5xl space-y-4">
-              {active === 'toko' && <AdminShop />}
-              {active === 'produk' && <AdminProducts />}
-              {active === 'user' && <AdminUsers />}
-              {active === 'pembayaran' && <AdminPayments />}
-              {active === 'chat' && <AdminChat />}
-              {active === 'testimoni' && <AdminTestimonials />}
+              {active === "toko" && <AdminShop />}
+              {active === "produk" && <AdminProducts />}
+              {active === "user" && <AdminUsers />}
+              {active === "pembayaran" && <AdminPayments />}
+              {active === "chat" && <AdminChat />}
+              {active === "testimoni" && <AdminTestimonials />}
             </div>
           </main>
         </SidebarInset>
