@@ -102,54 +102,107 @@ Compatible untuk all type Laptop Asus dengan spek adaptor yang sama.`,
   },
 ];
 
+// Live in-memory store synchronized directly with PostgreSQL backend via API endpoints
+let currentShop: Shop = defaultShop;
+let currentProducts: Product[] = defaultProducts;
+
+let shopFetched = false;
+let productsFetched = false;
+let testimonialsFetched = false;
+
 const listeners = new Set<() => void>();
-const cache: Record<string, unknown> = {};
-function read<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  if (!(key in cache)) {
-    try {
-      const raw = localStorage.getItem(key);
-      cache[key] = raw ? JSON.parse(raw) : fallback;
-      if (key === "kingz-products")
-        cache[key] = (cache[key] as (Product & { image?: string })[]).map((p) => ({
-          ...p,
-          price: p.price >= 1000 ? 59 : p.price,
-          images: p.images ?? (p.image ? [p.image] : []),
-        }));
-    } catch {
-      cache[key] = fallback;
-    }
-  }
-  return cache[key] as T;
-}
-function write<T>(key: string, value: T) {
-  cache[key] = value;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* storage penuh */
-  }
+function notify() {
   listeners.forEach((l) => l());
 }
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  return () => listeners.delete(l);
-};
 
-export const useShop = () =>
-  useSyncExternalStore(
+export function subscribe(l: () => void) {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
+export async function fetchShop() {
+  try {
+    const res = await fetch("/api/shop");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.name) {
+        currentShop = { ...defaultShop, ...data };
+        shopFetched = true;
+        notify();
+      }
+    }
+  } catch (err) {
+    console.warn("Gagal mengambil data toko:", err);
+  }
+}
+
+export async function fetchProducts() {
+  try {
+    const res = await fetch("/api/products");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        currentProducts = data;
+        productsFetched = true;
+        notify();
+      }
+    }
+  } catch (err) {
+    console.warn("Gagal mengambil data produk:", err);
+  }
+}
+
+export async function fetchTestimonials() {
+  try {
+    const res = await fetch("/api/testimonials");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        currentTestimonials = data;
+        testimonialsFetched = true;
+        notify();
+      }
+    }
+  } catch (err) {
+    console.warn("Gagal mengambil data testimoni:", err);
+  }
+}
+
+export const useShop = () => {
+  if (typeof window !== "undefined" && !shopFetched) {
+    shopFetched = true;
+    fetchShop();
+  }
+  return useSyncExternalStore(
     subscribe,
-    () => read("kingz-shop", defaultShop),
+    () => currentShop,
     () => defaultShop,
   );
-export const setShop = (s: Shop) => write("kingz-shop", s);
-export const useProducts = () =>
-  useSyncExternalStore(
+};
+
+export const setShop = (s: Shop) => {
+  currentShop = s;
+  notify();
+};
+
+export const useProducts = () => {
+  if (typeof window !== "undefined" && !productsFetched) {
+    productsFetched = true;
+    fetchProducts();
+  }
+  return useSyncExternalStore(
     subscribe,
-    () => read("kingz-products", defaultProducts),
+    () => currentProducts,
     () => defaultProducts,
   );
-export const setProducts = (p: Product[]) => write("kingz-products", p);
+};
+
+export const setProducts = (p: Product[]) => {
+  currentProducts = p;
+  notify();
+};
 
 export type Testimonial = {
   id: number;
@@ -162,10 +215,21 @@ export type Testimonial = {
 };
 import { reviews as seedReviews } from "@/components/product/product-data";
 const defaultTestimonials: Testimonial[] = seedReviews.map((r) => ({ ...r, rating: 5 }));
-export const useTestimonials = () =>
-  useSyncExternalStore(
+let currentTestimonials: Testimonial[] = defaultTestimonials;
+
+export const useTestimonials = () => {
+  if (typeof window !== "undefined" && !testimonialsFetched) {
+    testimonialsFetched = true;
+    fetchTestimonials();
+  }
+  return useSyncExternalStore(
     subscribe,
-    () => read("kingz-testimonials", defaultTestimonials),
+    () => currentTestimonials,
     () => defaultTestimonials,
   );
-export const setTestimonials = (t: Testimonial[]) => write("kingz-testimonials", t);
+};
+
+export const setTestimonials = (t: Testimonial[]) => {
+  currentTestimonials = t;
+  notify();
+};

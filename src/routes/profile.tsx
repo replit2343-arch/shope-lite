@@ -72,9 +72,6 @@ function ProfilePage() {
       <div className="mx-auto w-full max-w-md space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Profil Akun</h1>
-          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">
-            Express & PostgreSQL
-          </span>
         </div>
 
         {user ? (

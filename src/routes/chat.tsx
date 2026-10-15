@@ -105,7 +105,7 @@ function ChatPage() {
         <img src={storePhoto} alt="Kingz Sparepart Computer" className="chat-store-avatar" />
         <div className="min-w-0">
           <p className="chat-store-name">Kingz Sparepart Computer</p>
-          <p className="chat-store-status">Aktif 2 jam lalu · Express & PostgreSQL Ready</p>
+          <p className="chat-store-status">Aktif 2 jam lalu</p>
         </div>
       </header>
       <div className="chat-thread" ref={threadRef} aria-label="Percakapan dengan penjual">

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { setTestimonials, useTestimonials, type Testimonial } from "@/lib/shop-store";
+import { fetchTestimonials, useTestimonials, type Testimonial } from "@/lib/shop-store";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const fmt = (d: Date) =>
@@ -40,6 +40,10 @@ export function AdminTestimonials() {
   const [now, setNow] = useState("");
 
   useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  useEffect(() => {
     if (!live) return undefined;
     const tick = () => setNow(fmt(new Date()));
     tick();
@@ -53,16 +57,32 @@ export function AdminTestimonials() {
     setLive(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) {
       toast.error("Nama wajib diisi");
       return;
     }
     const data = { ...form, date: live ? fmt(new Date()) : form.date };
-    if (editId) setTestimonials(list.map((t) => (t.id === editId ? { ...data, id: editId } : t)));
-    else setTestimonials([{ ...data, id: Date.now() }, ...list]);
-    toast.success(editId ? "Testimoni diperbarui" : "Testimoni ditambahkan");
-    reset();
+    try {
+      if (editId) {
+        await fetch(`/api/testimonials/${editId}`, { method: "DELETE" });
+      }
+      const res = await fetch("/api/testimonials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan testimoni ke database");
+      await fetchTestimonials();
+      toast.success(
+        editId
+          ? "Testimoni diperbarui di database PostgreSQL"
+          : "Testimoni ditambahkan ke database PostgreSQL",
+      );
+      reset();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan testimoni");
+    }
   };
 
   const edit = (t: Testimonial) => {
@@ -72,11 +92,18 @@ export function AdminTestimonials() {
     setLive(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const remove = (id: number) => {
+
+  const remove = async (id: number) => {
     if (confirm("Hapus testimoni ini?")) {
-      setTestimonials(list.filter((t) => t.id !== id));
-      toast.success("Testimoni dihapus");
-      if (editId === id) reset();
+      try {
+        const res = await fetch(`/api/testimonials/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Gagal menghapus testimoni dari database");
+        await fetchTestimonials();
+        toast.success("Testimoni dihapus dari database PostgreSQL");
+        if (editId === id) reset();
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Gagal menghapus testimoni");
+      }
     }
   };
 

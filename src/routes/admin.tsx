@@ -131,12 +131,6 @@ function AdminPage() {
               <SidebarTrigger aria-label="Buka / tutup menu admin" />
               <h1 className="text-lg font-semibold">{currentLabel}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Express.js & PostgreSQL
-              </span>
-            </div>
           </header>
           <main className="px-4 py-6">
             <div className="mx-auto w-full max-w-5xl space-y-4">

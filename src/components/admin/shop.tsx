@@ -4,7 +4,7 @@ import { ImagePlus, RotateCcw, Save, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { defaultShop, setShop, useShop, type Shop } from "@/lib/shop-store";
+import { defaultShop, fetchShop, setShop, useShop, type Shop } from "@/lib/shop-store";
 
 const fields: [keyof Shop, string][] = [
   ["name", "Nama toko"],
@@ -23,6 +23,9 @@ export function AdminShop() {
   const shop = useShop();
   const [form, setForm] = useState<Shop>(shop);
   const fileInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    fetchShop();
+  }, []);
   useEffect(() => setForm(shop), [shop]);
 
   const pickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,17 +39,41 @@ export function AdminShop() {
     reader.onload = () => setForm((f) => ({ ...f, photo: String(reader.result) }));
     reader.readAsDataURL(file);
   };
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) {
       toast.error("Nama toko wajib diisi");
       return;
     }
-    setShop(form);
-    toast.success("Data toko disimpan");
+    try {
+      const res = await fetch("/api/shop", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan ke database");
+      const updated = await res.json();
+      setShop(updated);
+      toast.success("Profil toko berhasil disimpan ke database PostgreSQL!");
+    } catch (err: unknown) {
+      setShop(form);
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan toko");
+    }
   };
-  const reset = () => {
-    setShop(defaultShop);
-    toast.success("Data toko dikembalikan ke awal");
+  const reset = async () => {
+    try {
+      const res = await fetch("/api/shop", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(defaultShop),
+      });
+      if (!res.ok) throw new Error("Gagal mereset ke database");
+      const updated = await res.json();
+      setShop(updated);
+      toast.success("Profil toko dikembalikan ke awal di database PostgreSQL!");
+    } catch {
+      setShop(defaultShop);
+      toast.success("Data toko dikembalikan ke awal");
+    }
   };
 
   return (
@@ -108,7 +135,7 @@ export function AdminShop() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Perubahan langsung tampil di halaman beranda (tersimpan di perangkat ini).
+        Perubahan tersimpan langsung di database PostgreSQL dan langsung tampil di halaman beranda.
       </p>
     </div>
   );

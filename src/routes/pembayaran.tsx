@@ -301,7 +301,7 @@ function CheckoutPage() {
   }, []);
 
   const subtotal = checkoutItem.price * checkoutItem.quantity;
-  const shippingCost = shipping === "Instan" ? 30000 : 15000;
+  const shippingCost = shipping === "Instan" ? SHIPPING_INSTANT_RM : SHIPPING_REGULAR_RM;
   const total = subtotal + shippingCost;
   const [submitting, setSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
@@ -433,7 +433,9 @@ function CheckoutPage() {
                   />
                   <span>{method}</span>
                   <span className="ml-auto text-primary">
-                    {method === "Instan" ? "Rp30.000" : "Rp15.000"}
+                    {method === "Instan"
+                      ? formatRM(SHIPPING_INSTANT_RM)
+                      : formatRM(SHIPPING_REGULAR_RM)}
                   </span>
                 </label>
               ))}

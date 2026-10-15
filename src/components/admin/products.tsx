@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { X, ImagePlus, Pencil, Plus, Trash2, Package } from "lucide-react";
+import { X, ImagePlus, Pencil, Plus, Trash2, Package, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { emptySpecs, setProducts, useProducts, type Product, type Specs } from "@/lib/shop-store";
+import { emptySpecs, fetchProducts, useProducts, type Product, type Specs } from "@/lib/shop-store";
 import { formatRM } from "@/lib/currency";
 
 const empty: Omit<Product, "id"> = { name: "", price: 0, stock: 0, images: [], specs: emptySpecs };
@@ -33,11 +33,21 @@ const rp = (n: number) => formatRM(n);
 
 export function AdminProducts() {
   const items = useProducts();
-  const setItems = (fn: (s: Product[]) => Product[]) => setProducts(fn(items));
+  const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState(empty);
   const [open, setOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    await fetchProducts();
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const pickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -77,42 +87,39 @@ export function AdminProducts() {
     }
     try {
       if (editing) {
-        await fetch(`/api/products/${editing.id}`, {
+        const res = await fetch(`/api/products/${editing.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         });
-        setItems((s) => s.map((p) => (p.id === editing.id ? { ...p, ...form } : p)));
-        toast.success("Produk berhasil diperbarui di database");
+        if (!res.ok) throw new Error("Gagal memperbarui produk di database");
+        await fetchProducts();
+        toast.success("Produk berhasil diperbarui di database PostgreSQL");
       } else {
         const res = await fetch("/api/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         });
-        const created = await res.json();
-        setItems((s) => [...s, created]);
-        toast.success("Produk berhasil ditambahkan ke database");
+        if (!res.ok) throw new Error("Gagal menambahkan produk ke database");
+        await fetchProducts();
+        toast.success("Produk berhasil ditambahkan ke database PostgreSQL");
       }
-    } catch {
-      if (editing) {
-        setItems((s) => s.map((p) => (p.id === editing.id ? { ...p, ...form } : p)));
-      } else {
-        setItems((s) => [...s, { id: Date.now(), ...form }]);
-      }
-      toast.success("Produk disimpan");
+      setOpen(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan produk");
     }
-    setOpen(false);
   };
 
   const remove = async (id: number) => {
     try {
-      await fetch(`/api/products/${id}`, { method: "DELETE" });
-    } catch (e) {
-      console.warn(e);
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Gagal menghapus produk");
+      await fetchProducts();
+      toast.success("Produk berhasil dihapus dari database PostgreSQL");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus produk");
     }
-    setItems((s) => s.filter((p) => p.id !== id));
-    toast.success("Produk berhasil dihapus dari database");
   };
 
   const totalStock = items.reduce((a, p) => a + p.stock, 0);
@@ -121,11 +128,27 @@ export function AdminProducts() {
     <div>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Manajemen Produk</h2>
-          <Button onClick={() => openForm()}>
-            <Plus />
-            Tambah
-          </Button>
+          <div>
+            <h2 className="text-lg font-semibold">Manajemen Produk</h2>
+            <p className="text-xs text-muted-foreground">
+              Tersimpan di database PostgreSQL &amp; dapat diakses oleh semua pembeli.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={loadData}
+              disabled={loading}
+              title="Refresh Produk"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button onClick={() => openForm()} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              Tambah Produk
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -178,7 +201,7 @@ export function AdminProducts() {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Produk pertama ditampilkan di halaman beranda (tersimpan di perangkat ini).
+          Semua produk tersimpan di database PostgreSQL dan langsung tampil di halaman toko.
         </p>
       </div>
 

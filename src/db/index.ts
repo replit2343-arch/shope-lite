@@ -418,14 +418,83 @@ export async function initPostgresTables() {
     // Seed default admin if table is empty
     const adminCheck = await client.query("SELECT COUNT(*) FROM users WHERE role = 'admin'");
     if (parseInt(adminCheck.rows[0].count, 10) === 0) {
-      const adminEmail = process.env.ADMIN_EMAIL || "admin@kingz.id";
-      const adminPass = process.env.ADMIN_PASSWORD || "admin123456";
-      const adminName = process.env.ADMIN_NAME || "Admin Kingz Sparepart";
+      const adminEmail = process.env.ADMIN_EMAIL || "admin@gmail.com";
+      const adminPass = process.env.ADMIN_PASSWORD || "123admin123";
+      const adminName = process.env.ADMIN_NAME || "Admin";
       await client.query(
         "INSERT INTO users (name, email, phone, role, active, password) VALUES ($1, $2, $3, $4, $5, $6)",
         [adminName, adminEmail, "081200000001", "admin", true, adminPass],
       );
       console.log(`[PostgreSQL] Seeded default admin account: ${adminEmail}`);
+    }
+
+    // Seed shop profile if empty
+    const shopCheck = await client.query("SELECT COUNT(*) FROM shop_profile");
+    if (parseInt(shopCheck.rows[0].count, 10) === 0) {
+      const s = memoryStore.shop;
+      await client.query(
+        `INSERT INTO shop_profile (name, badge, active_text, photo, tagline, rating, chat_rate, joined, products, chat_time, followers)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [
+          s.name,
+          s.badge,
+          s.activeText,
+          s.photo,
+          s.tagline,
+          s.rating,
+          s.chatRate,
+          s.joined,
+          s.products,
+          s.chatTime,
+          s.followers,
+        ],
+      );
+      console.log("[PostgreSQL] Seeded default shop profile");
+    }
+
+    // Seed products if empty
+    const prodCheck = await client.query("SELECT COUNT(*) FROM products");
+    if (parseInt(prodCheck.rows[0].count, 10) === 0) {
+      for (const p of memoryStore.products) {
+        await client.query(
+          "INSERT INTO products (name, price, stock, images, specs) VALUES ($1, $2, $3, $4, $5)",
+          [p.name, p.price, p.stock, JSON.stringify(p.images), JSON.stringify(p.specs)],
+        );
+      }
+      console.log("[PostgreSQL] Seeded default products");
+    }
+
+    // Seed testimonials if empty
+    const testiCheck = await client.query("SELECT COUNT(*) FROM testimonials");
+    if (parseInt(testiCheck.rows[0].count, 10) === 0) {
+      for (const t of memoryStore.testimonials) {
+        await client.query(
+          "INSERT INTO testimonials (name, rating, comment, date, avatar, media) VALUES ($1, $2, $3, $4, $5, $6)",
+          [t.name, t.rating, t.comment, t.date, t.avatar, t.media],
+        );
+      }
+      console.log("[PostgreSQL] Seeded default testimonials");
+    }
+
+    // Seed payment methods if empty
+    const payCheck = await client.query("SELECT COUNT(*) FROM payment_methods");
+    if (parseInt(payCheck.rows[0].count, 10) === 0) {
+      for (const m of memoryStore.paymentMethods) {
+        await client.query(
+          "INSERT INTO payment_methods (kind, name, display_type, account, holder, qris_image, instructions, active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+          [
+            m.kind,
+            m.name,
+            m.display_type,
+            m.account,
+            m.holder,
+            m.qris_image || "",
+            m.instructions || "",
+            m.active,
+          ],
+        );
+      }
+      console.log("[PostgreSQL] Seeded default payment methods");
     }
 
     client.release();
@@ -670,20 +739,183 @@ export const db = {
   },
 
   async getShop(): Promise<ShopRow> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query("SELECT * FROM shop_profile ORDER BY id ASC LIMIT 1");
+        if (res.rows.length > 0) {
+          const r = res.rows[0];
+          return {
+            id: r.id,
+            name: r.name,
+            badge: r.badge || "",
+            activeText: r.active_text || "",
+            photo: r.photo || "",
+            tagline: r.tagline || "",
+            rating: r.rating || "",
+            chatRate: r.chat_rate || "",
+            joined: r.joined || "",
+            products: r.products || "",
+            chatTime: r.chat_time || "",
+            followers: r.followers || "",
+          };
+        }
+      } catch (err) {
+        console.warn("Error getting shop from Postgres, fallback to memory:", err);
+      }
+    }
     return memoryStore.shop;
   },
 
   async updateShop(s: Partial<ShopRow>): Promise<ShopRow> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const check = await pool.query("SELECT id FROM shop_profile ORDER BY id ASC LIMIT 1");
+        if (check.rows.length > 0) {
+          const id = check.rows[0].id;
+          const sets: string[] = [];
+          const vals: unknown[] = [];
+          let i = 1;
+          if (s.name !== undefined) {
+            sets.push(`name = $${i++}`);
+            vals.push(s.name);
+          }
+          if (s.badge !== undefined) {
+            sets.push(`badge = $${i++}`);
+            vals.push(s.badge);
+          }
+          if (s.activeText !== undefined) {
+            sets.push(`active_text = $${i++}`);
+            vals.push(s.activeText);
+          }
+          if (s.photo !== undefined) {
+            sets.push(`photo = $${i++}`);
+            vals.push(s.photo);
+          }
+          if (s.tagline !== undefined) {
+            sets.push(`tagline = $${i++}`);
+            vals.push(s.tagline);
+          }
+          if (s.rating !== undefined) {
+            sets.push(`rating = $${i++}`);
+            vals.push(s.rating);
+          }
+          if (s.chatRate !== undefined) {
+            sets.push(`chat_rate = $${i++}`);
+            vals.push(s.chatRate);
+          }
+          if (s.joined !== undefined) {
+            sets.push(`joined = $${i++}`);
+            vals.push(s.joined);
+          }
+          if (s.products !== undefined) {
+            sets.push(`products = $${i++}`);
+            vals.push(s.products);
+          }
+          if (s.chatTime !== undefined) {
+            sets.push(`chat_time = $${i++}`);
+            vals.push(s.chatTime);
+          }
+          if (s.followers !== undefined) {
+            sets.push(`followers = $${i++}`);
+            vals.push(s.followers);
+          }
+          if (sets.length > 0) {
+            vals.push(id);
+            const res = await pool.query(
+              `UPDATE shop_profile SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
+              vals,
+            );
+            const r = res.rows[0];
+            const updated: ShopRow = {
+              id: r.id,
+              name: r.name,
+              badge: r.badge || "",
+              activeText: r.active_text || "",
+              photo: r.photo || "",
+              tagline: r.tagline || "",
+              rating: r.rating || "",
+              chatRate: r.chat_rate || "",
+              joined: r.joined || "",
+              products: r.products || "",
+              chatTime: r.chat_time || "",
+              followers: r.followers || "",
+            };
+            memoryStore.shop = updated;
+            return updated;
+          }
+        } else {
+          const res = await pool.query(
+            `INSERT INTO shop_profile (name, badge, active_text, photo, tagline, rating, chat_rate, joined, products, chat_time, followers)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+            [
+              s.name || memoryStore.shop.name,
+              s.badge || memoryStore.shop.badge,
+              s.activeText || memoryStore.shop.activeText,
+              s.photo || memoryStore.shop.photo,
+              s.tagline || memoryStore.shop.tagline,
+              s.rating || memoryStore.shop.rating,
+              s.chatRate || memoryStore.shop.chatRate,
+              s.joined || memoryStore.shop.joined,
+              s.products || memoryStore.shop.products,
+              s.chatTime || memoryStore.shop.chatTime,
+              s.followers || memoryStore.shop.followers,
+            ],
+          );
+          const r = res.rows[0];
+          const created: ShopRow = {
+            id: r.id,
+            name: r.name,
+            badge: r.badge || "",
+            activeText: r.active_text || "",
+            photo: r.photo || "",
+            tagline: r.tagline || "",
+            rating: r.rating || "",
+            chatRate: r.chat_rate || "",
+            joined: r.joined || "",
+            products: r.products || "",
+            chatTime: r.chat_time || "",
+            followers: r.followers || "",
+          };
+          memoryStore.shop = created;
+          return created;
+        }
+      } catch (err) {
+        console.warn("Error updating shop in Postgres, fallback to memory:", err);
+      }
+    }
     memoryStore.shop = { ...memoryStore.shop, ...s };
     return memoryStore.shop;
   },
 
   async getChatMessages(): Promise<ChatMessageRow[]> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query("SELECT * FROM chat_messages ORDER BY id ASC");
+        if (res.rows.length > 0) return res.rows;
+      } catch (err) {
+        console.warn("Error getting chat messages from Postgres:", err);
+      }
+    }
     return memoryStore.chatMessages;
   },
 
   async addChatMessage(sender: "seller" | "me", text: string): Promise<ChatMessageRow> {
     const time = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query(
+          "INSERT INTO chat_messages (sender, text, time) VALUES ($1, $2, $3) RETURNING *",
+          [sender, text, time],
+        );
+        return res.rows[0];
+      } catch (err) {
+        console.warn("Error adding chat message to Postgres:", err);
+      }
+    }
     const msg: ChatMessageRow = {
       id: Date.now(),
       sender,
@@ -695,27 +927,96 @@ export const db = {
   },
 
   async getTestimonials(): Promise<TestimonialRow[]> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query("SELECT * FROM testimonials ORDER BY id DESC");
+        if (res.rows.length > 0) return res.rows;
+      } catch (err) {
+        console.warn("Error getting testimonials from Postgres:", err);
+      }
+    }
     return memoryStore.testimonials;
   },
 
   async addTestimonial(t: Omit<TestimonialRow, "id">): Promise<TestimonialRow> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query(
+          "INSERT INTO testimonials (name, rating, comment, date, avatar, media) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+          [t.name, t.rating, t.comment || "", t.date || "", t.avatar || "", t.media || ""],
+        );
+        return res.rows[0];
+      } catch (err) {
+        console.warn("Error adding testimonial to Postgres:", err);
+      }
+    }
     const newTesti: TestimonialRow = { id: Date.now(), ...t };
-    memoryStore.testimonials.push(newTesti);
+    memoryStore.testimonials.unshift(newTesti);
     return newTesti;
   },
 
   async deleteTestimonial(id: number): Promise<boolean> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        await pool.query("DELETE FROM testimonials WHERE id = $1", [id]);
+        return true;
+      } catch (err) {
+        console.warn("Error deleting testimonial from Postgres:", err);
+      }
+    }
     memoryStore.testimonials = memoryStore.testimonials.filter((t) => t.id !== id);
     return true;
   },
 
   async getOrders(): Promise<OrderRow[]> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query("SELECT * FROM orders ORDER BY id DESC");
+        if (res.rows.length > 0) {
+          return res.rows.map((r) => ({
+            ...r,
+            items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
+          }));
+        }
+      } catch (err) {
+        console.warn("Error getting orders from Postgres:", err);
+      }
+    }
     return memoryStore.orders;
   },
 
   async createOrder(order: Omit<OrderRow, "id">): Promise<OrderRow> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const res = await pool.query(
+          "INSERT INTO orders (buyer_name, buyer_email, buyer_phone, address, items, total_price, status, payment_method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+          [
+            order.buyer_name,
+            order.buyer_email,
+            order.buyer_phone,
+            order.address,
+            JSON.stringify(order.items),
+            order.total_price,
+            order.status || "Diproses",
+            order.payment_method || "Transfer Bank",
+          ],
+        );
+        const r = res.rows[0];
+        return {
+          ...r,
+          items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
+        };
+      } catch (err) {
+        console.warn("Error creating order in Postgres:", err);
+      }
+    }
     const newOrder: OrderRow = { id: Date.now(), ...order };
-    memoryStore.orders.push(newOrder);
+    memoryStore.orders.unshift(newOrder);
     return newOrder;
   },
 
