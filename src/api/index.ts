@@ -21,7 +21,7 @@ apiRouter.get("/health", async (_req: Request, res: Response) => {
     database: db.isPgConnected()
       ? "PostgreSQL (Connected)"
       : "PostgreSQL (Fallback / Memory Ready)",
-    port: process.env.PORT || 3008,
+    port: process.env.PORT || 3000,
     timestamp: new Date().toISOString(),
   });
 });
