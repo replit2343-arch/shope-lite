@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +15,6 @@ export function AuthCard({ mode }: { mode: "login" | "register" }) {
   const [phone, setPhone] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const fillAdmin = () => {
-    setEmail("admin@kingz.id");
-    setPassword("admin123456");
-    toast.info("Kredensial admin diisi otomatis dari .env");
-  };
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,38 +61,12 @@ export function AuthCard({ mode }: { mode: "login" | "register" }) {
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 py-10 pb-28">
       <div className="w-full max-w-sm bg-card rounded-lg border p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-primary font-bold text-sm">Kingz Sparepart Computer</p>
-          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">
-            Express & PostgreSQL
-          </span>
-        </div>
-        <h1 className="text-2xl font-bold mt-1">{isLogin ? "Masuk" : "Daftar Akun"}</h1>
+        <h1 className="text-2xl font-bold">{isLogin ? "Masuk" : "Daftar Akun"}</h1>
         <p className="text-muted-foreground mt-1 mb-4 text-xs">
           {isLogin
             ? "Masuk untuk belanja, chat penjual, atau akses admin."
             : "Buat akun baru untuk mulai berbelanja sparepart original."}
         </p>
-
-        {isLogin && (
-          <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
-            <div className="flex items-center gap-1.5 font-semibold text-primary mb-1">
-              <Shield className="h-3.5 w-3.5" />
-              <span>Akun Admin (dari .env):</span>
-            </div>
-            <p className="text-muted-foreground font-mono">admin@kingz.id / admin123456</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2 w-full h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
-              onClick={fillAdmin}
-            >
-              <Sparkles className="h-3 w-3" />
-              Gunakan Akun Admin
-            </Button>
-          </div>
-        )}
 
         <form onSubmit={submit} className="space-y-3.5">
           {!isLogin && (
