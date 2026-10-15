@@ -31,7 +31,7 @@ export async function handleApiFetch(request: Request): Promise<Response | null>
           database: db.isPgConnected()
             ? "PostgreSQL (Connected)"
             : "PostgreSQL (Fallback / Memory Ready)",
-          port: process.env.PORT || 3000,
+          port: process.env.PORT || 3008,
           timestamp: new Date().toISOString(),
         },
         { headers },
