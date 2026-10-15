@@ -29,22 +29,6 @@ import {
 import { getPaymentsServerData } from "@/lib/server-store";
 
 export const Route = createFileRoute("/pembayaran")({
-  head: () => ({
-    meta: [
-      { title: "Pembayaran | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content: "Halaman pembayaran dan checkout pesanan Kingz Sparepart Computer.",
-      },
-      { property: "og:title", content: "Pembayaran | Kingz Sparepart Computer" },
-      {
-        property: "og:description",
-        content: "Pilih pengiriman dan metode pembayaran pesanan Anda.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   loader: async () => {
     return await getPaymentsServerData();
   },

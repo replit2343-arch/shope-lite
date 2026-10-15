@@ -14,19 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({
-    meta: [
-      { title: "Profil | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content: "Kelola akun, pesanan, dan pengaturan Anda di Kingz Sparepart Computer.",
-      },
-      { property: "og:title", content: "Profil | Kingz Sparepart Computer" },
-      { property: "og:description", content: "Kelola akun, pesanan, dan pengaturan Anda." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   component: ProfilePage,
 });
 

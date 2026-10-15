@@ -7,23 +7,6 @@ import { useShop } from "@/lib/shop-store";
 import { getChatServerData } from "@/lib/server-store";
 
 export const Route = createFileRoute("/chat")({
-  head: () => ({
-    meta: [
-      { title: "Chat Penjual | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content:
-          "Hubungi penjual Kingz Sparepart Computer langsung melalui chat untuk tanya stok dan kelengkapan produk.",
-      },
-      { property: "og:title", content: "Chat Penjual | Kingz Sparepart Computer" },
-      {
-        property: "og:description",
-        content: "Chat langsung dengan penjual untuk tanya stok dan kelengkapan produk.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
   loader: async () => {
     return await getChatServerData();
   },

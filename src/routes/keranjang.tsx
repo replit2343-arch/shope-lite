@@ -13,23 +13,9 @@ import {
 } from "lucide-react";
 import { photos, productTitle } from "@/components/product/product-data";
 import { formatRM, DEFAULT_PRODUCT_PRICE } from "@/lib/currency";
-import { useProducts } from "@/lib/shop-store";
+import { useProducts, useShop } from "@/lib/shop-store";
 
 export const Route = createFileRoute("/keranjang")({
-  head: () => ({
-    meta: [
-      { title: "Keranjang Belanja | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content:
-          "Keranjang belanja Kingz Sparepart Computer. Atur jumlah produk dan lanjutkan checkout.",
-      },
-      { property: "og:title", content: "Keranjang Belanja | Kingz Sparepart Computer" },
-      { property: "og:description", content: "Lihat dan atur produk di keranjang belanja Anda." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   component: CartPage,
 });
 
@@ -58,6 +44,7 @@ function Box({
 
 function CartPage() {
   const products = useProducts();
+  const shop = useShop();
   const product = products[0];
   const itemTitle = product?.name || productTitle;
   const itemPrice = product?.price || PRICE;
@@ -118,9 +105,9 @@ function CartPage() {
           <div className="flex items-center gap-3 border-b px-3 py-4 sm:px-5">
             <Box checked={checked} onChange={toggle} label="Pilih toko" />
             <span className="rounded-sm bg-primary px-1 text-xs font-semibold text-primary-foreground">
-              Star+
+              {shop.badge}
             </span>
-            <span className="truncate text-sm font-medium">Kingz Sparepart Computer</span>
+            <span className="truncate text-sm font-medium">{shop.name}</span>
             <MessageSquareText className="h-4 w-4 shrink-0 text-primary" />
           </div>
 

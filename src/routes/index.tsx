@@ -24,26 +24,6 @@ import { ProductList } from "@/components/product/product-list";
 import { formatRM, normalizePriceRM, DEFAULT_PRODUCT_PRICE } from "@/lib/currency";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Adaptor Asus A19-090P2A Original | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content:
-          "Adaptor charger laptop Asus original 19V 4.74A 90W. Lihat foto produk, spesifikasi, dan penilaian di Kingz Sparepart Computer.",
-      },
-      {
-        property: "og:title",
-        content: "Adaptor Asus A19-090P2A Original | Kingz Sparepart Computer",
-      },
-      {
-        property: "og:description",
-        content: "Detail adaptor Asus original 19V 4.74A 90W, foto produk, dan penilaian pembeli.",
-      },
-      { property: "og:type", content: "product" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
   loader: async () => {
     const data = await getStoreServerData();
     if (data) {

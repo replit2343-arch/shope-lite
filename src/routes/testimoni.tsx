@@ -5,23 +5,6 @@ import { getTestimonialsServerData } from "@/lib/server-store";
 import { Stars } from "@/components/product/stars";
 
 export const Route = createFileRoute("/testimoni")({
-  head: () => ({
-    meta: [
-      { title: "Testimoni Pembeli | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content:
-          "Testimoni dan penilaian pembeli untuk produk Kingz Sparepart Computer. Rating 5.0 dari pembeli terverifikasi.",
-      },
-      { property: "og:title", content: "Testimoni Pembeli | Kingz Sparepart Computer" },
-      {
-        property: "og:description",
-        content: "Rating 5.0 dari pembeli terverifikasi Kingz Sparepart Computer.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
   loader: async () => {
     const data = await getTestimonialsServerData();
     if (data && Array.isArray(data) && data.length > 0) {

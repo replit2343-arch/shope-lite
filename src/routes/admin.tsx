@@ -34,20 +34,6 @@ import { AdminChat } from "@/components/admin/chat";
 import { AdminTestimonials } from "@/components/admin/testimonials";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({
-    meta: [
-      { title: "Admin | Kingz Sparepart Computer" },
-      {
-        name: "description",
-        content: "Kelola produk, user, metode pembayaran, dan chat toko Kingz Sparepart Computer.",
-      },
-      { property: "og:title", content: "Admin | Kingz Sparepart Computer" },
-      { property: "og:description", content: "Kelola produk, user, pembayaran, dan chat toko." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
   component: AdminPage,
 });
 
