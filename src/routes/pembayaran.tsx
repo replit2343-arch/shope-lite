@@ -25,6 +25,7 @@ import {
   SHIPPING_REGULAR_RM,
   SHIPPING_INSTANT_RM,
 } from "@/lib/currency";
+import { useShop } from "@/lib/shop-store";
 
 import { getPaymentsServerData } from "@/lib/server-store";
 
@@ -120,11 +121,9 @@ const crc16 = (payload: string) => {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 };
 
-const qrisPayload = (amount: number) => {
+const qrisPayload = (amount: number, merchantName = "KINGZ SPAREPART COMPUTER") => {
   const merchant =
-    tlv("00", "ID.CO.QRIS.WWW") +
-    tlv("01", "ID2025123456789") +
-    tlv("02", "KINGZ SPAREPART COMPUTER");
+    tlv("00", "ID.CO.QRIS.WWW") + tlv("01", "ID2025123456789") + tlv("02", merchantName);
   const body =
     tlv("00", "01") +
     tlv("01", "12") +
@@ -133,7 +132,7 @@ const qrisPayload = (amount: number) => {
     tlv("53", "360") +
     tlv("54", String(amount)) +
     tlv("58", "ID") +
-    tlv("59", "Kingz Sparepart") +
+    tlv("59", merchantName.slice(0, 25)) +
     tlv("60", "Bogor") +
     tlv("61", "16911") +
     "6304";
@@ -150,13 +149,16 @@ async function copyText(text: string, label: string) {
 }
 
 function PaymentDetail({ method, total }: { method: PaymentMethodItem; total: number }) {
-  const dynamicPayload = qrisPayload(total);
+  const shop = useShop();
+  const dynamicPayload = qrisPayload(total, shop.name.toUpperCase());
   const showAccount =
     (method.display_type === "account" || method.kind === "cod") &&
     method.account &&
     method.account !== "-";
 
   const showQris = method.display_type === "qris" || method.kind === "qris";
+  const holderName =
+    method.holder === "Kingz Sparepart Computer" || !method.holder ? shop.name : method.holder;
 
   return (
     <div className="border-t border-dashed p-3 space-y-3 bg-muted/20">
@@ -183,9 +185,7 @@ function PaymentDetail({ method, total }: { method: PaymentMethodItem; total: nu
               <p className="font-mono text-base font-bold tracking-wide text-foreground">
                 {method.account}
               </p>
-              <p className="text-xs text-muted-foreground">
-                a.n. {method.holder || "Kingz Sparepart"}
-              </p>
+              <p className="text-xs text-muted-foreground">a.n. {holderName}</p>
             </div>
             <button
               type="button"
@@ -260,6 +260,7 @@ const methodIcons = {
 };
 
 function CheckoutPage() {
+  const shop = useShop();
   const loaderPayments = Route.useLoaderData();
   const getInitialPayments = (): PaymentMethodItem[] => {
     if (Array.isArray(loaderPayments) && loaderPayments.length > 0) {
@@ -410,7 +411,7 @@ function CheckoutPage() {
         <section className="rounded-sm bg-card shadow-sm">
           <div className="flex items-center gap-2 border-b px-3 py-4 text-primary sm:px-5">
             <Store className="h-4 w-4" />
-            <span className="text-sm font-medium">Kingz Sparepart Computer</span>
+            <span className="text-sm font-medium">{shop.name}</span>
           </div>
 
           <div className="flex flex-col gap-3 border-b px-3 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-5">
