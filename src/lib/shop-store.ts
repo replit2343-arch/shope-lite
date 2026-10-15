@@ -102,12 +102,39 @@ Compatible untuk all type Laptop Asus dengan spek adaptor yang sama.`,
   },
 ];
 
-// Live in-memory store synchronized directly with PostgreSQL backend via API endpoints
-let currentShop: Shop = defaultShop;
-let currentProducts: Product[] = defaultProducts;
+function loadCache<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = sessionStorage.getItem(`vps_cache_${key}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return fallback;
+}
 
-let shopFetched = false;
-let productsFetched = false;
+function saveCache(key: string, data: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(`vps_cache_${key}`, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
+const cachedShop = loadCache<Shop | null>("shop", null);
+const cachedProducts = loadCache<Product[] | null>("products", null);
+
+// Live in-memory store synchronized directly with PostgreSQL backend via API endpoints
+let currentShop: Shop = cachedShop || defaultShop;
+let currentProducts: Product[] =
+  cachedProducts && cachedProducts.length > 0 ? cachedProducts : defaultProducts;
+
+let shopFetched = !!cachedShop;
+let productsFetched = !!(cachedProducts && cachedProducts.length > 0);
 let testimonialsFetched = false;
 
 const listeners = new Set<() => void>();
@@ -130,6 +157,7 @@ export async function fetchShop() {
       if (data && data.name) {
         currentShop = { ...defaultShop, ...data };
         shopFetched = true;
+        saveCache("shop", currentShop);
         notify();
       }
     }
@@ -146,6 +174,7 @@ export async function fetchProducts() {
       if (Array.isArray(data) && data.length > 0) {
         currentProducts = data;
         productsFetched = true;
+        saveCache("products", currentProducts);
         notify();
       }
     }
@@ -162,6 +191,7 @@ export async function fetchTestimonials() {
       if (Array.isArray(data) && data.length > 0) {
         currentTestimonials = data;
         testimonialsFetched = true;
+        saveCache("testimonials", currentTestimonials);
         notify();
       }
     }
@@ -178,12 +208,13 @@ export const useShop = () => {
   return useSyncExternalStore(
     subscribe,
     () => currentShop,
-    () => defaultShop,
+    () => currentShop,
   );
 };
 
 export const setShop = (s: Shop) => {
   currentShop = s;
+  saveCache("shop", currentShop);
   notify();
 };
 
@@ -195,12 +226,13 @@ export const useProducts = () => {
   return useSyncExternalStore(
     subscribe,
     () => currentProducts,
-    () => defaultProducts,
+    () => currentProducts,
   );
 };
 
 export const setProducts = (p: Product[]) => {
   currentProducts = p;
+  saveCache("products", currentProducts);
   notify();
 };
 
@@ -215,7 +247,10 @@ export type Testimonial = {
 };
 import { reviews as seedReviews } from "@/components/product/product-data";
 const defaultTestimonials: Testimonial[] = seedReviews.map((r) => ({ ...r, rating: 5 }));
-let currentTestimonials: Testimonial[] = defaultTestimonials;
+const cachedTestimonials = loadCache<Testimonial[] | null>("testimonials", null);
+let currentTestimonials: Testimonial[] =
+  cachedTestimonials && cachedTestimonials.length > 0 ? cachedTestimonials : defaultTestimonials;
+testimonialsFetched = !!(cachedTestimonials && cachedTestimonials.length > 0);
 
 export const useTestimonials = () => {
   if (typeof window !== "undefined" && !testimonialsFetched) {
@@ -225,11 +260,52 @@ export const useTestimonials = () => {
   return useSyncExternalStore(
     subscribe,
     () => currentTestimonials,
-    () => defaultTestimonials,
+    () => currentTestimonials,
   );
 };
 
 export const setTestimonials = (t: Testimonial[]) => {
   currentTestimonials = t;
+  saveCache("testimonials", currentTestimonials);
   notify();
 };
+
+export function initStoreData(data: {
+  shop?: Shop | null;
+  products?: Product[] | null;
+  testimonials?: Testimonial[] | null;
+}) {
+  let changed = false;
+  if (data.shop && data.shop.name) {
+    currentShop = { ...defaultShop, ...data.shop };
+    shopFetched = true;
+    saveCache("shop", currentShop);
+    changed = true;
+  }
+  if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+    currentProducts = data.products;
+    productsFetched = true;
+    saveCache("products", currentProducts);
+    changed = true;
+  }
+  if (data.testimonials && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+    currentTestimonials = data.testimonials;
+    testimonialsFetched = true;
+    saveCache("testimonials", currentTestimonials);
+    changed = true;
+  }
+  if (changed && typeof window !== "undefined") {
+    notify();
+  }
+}
+
+export function initTestimonialsData(data: Testimonial[]) {
+  if (Array.isArray(data) && data.length > 0) {
+    currentTestimonials = data;
+    testimonialsFetched = true;
+    saveCache("testimonials", currentTestimonials);
+    if (typeof window !== "undefined") {
+      notify();
+    }
+  }
+}

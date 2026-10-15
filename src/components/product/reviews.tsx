@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, MoreVertical, ThumbsUp, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTestimonials } from "@/lib/shop-store";
+import { useTestimonials, type Testimonial } from "@/lib/shop-store";
 import { Stars } from "./stars";
 
 export function ProductReviews({
+  reviews: propReviews,
   onMedia,
   onReport,
 }: {
+  reviews?: Testimonial[];
   onMedia: (url: string) => void;
   onReport: () => void;
 }) {
-  const reviews = useTestimonials();
+  const storeReviews = useTestimonials();
+  const reviews = propReviews && propReviews.length > 0 ? propReviews : storeReviews;
   const [filter, setFilter] = useState("Semua");
   const [helpful, setHelpful] = useState<number[]>([]);
   const countFor = (star: number) => reviews.filter((r) => r.rating === star).length;

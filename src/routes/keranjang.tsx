@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { photos, productTitle } from "@/components/product/product-data";
 import { formatRM, DEFAULT_PRODUCT_PRICE } from "@/lib/currency";
+import { useProducts } from "@/lib/shop-store";
 
 export const Route = createFileRoute("/keranjang")({
   head: () => ({
@@ -56,11 +57,17 @@ function Box({
 }
 
 function CartPage() {
+  const products = useProducts();
+  const product = products[0];
+  const itemTitle = product?.name || productTitle;
+  const itemPrice = product?.price || PRICE;
+  const itemImage = product?.images?.[0] || photos[0];
+
   const [qty, setQty] = useState(1);
   const [checked, setChecked] = useState(true);
   const [inCart, setInCart] = useState(true);
 
-  const total = checked && inCart ? PRICE * qty : 0;
+  const total = checked && inCart ? itemPrice * qty : 0;
   const toggle = () => setChecked((c) => !c);
 
   if (!inCart) {
@@ -123,12 +130,12 @@ function CartPage() {
             </div>
             <div className="flex min-w-0 gap-3">
               <img
-                src={photos[0]}
-                alt={productTitle}
+                src={itemImage}
+                alt={itemTitle}
                 className="h-20 w-20 shrink-0 border object-cover rounded-sm"
               />
               <div className="min-w-0 flex-1 md:pr-4">
-                <p className="line-clamp-2 text-sm font-medium">{productTitle}</p>
+                <p className="line-clamp-2 text-sm font-medium">{itemTitle}</p>
                 <div className="mt-1 flex flex-wrap gap-1 text-[10px] font-bold">
                   <span className="rounded-sm bg-primary/10 px-1 text-primary">GRATIS ONGKIR</span>
                   <span className="rounded-sm bg-accent/10 px-1 text-accent-foreground">
@@ -140,7 +147,7 @@ function CartPage() {
                 </div>
                 {/* Mobile details */}
                 <div className="mt-2 md:hidden">
-                  <p className="text-sm font-semibold text-primary">{rp(PRICE)}</p>
+                  <p className="text-sm font-semibold text-primary">{rp(itemPrice)}</p>
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <Qty qty={qty} setQty={setQty} />
                     <button
@@ -153,12 +160,12 @@ function CartPage() {
                 </div>
               </div>
             </div>
-            <span className="hidden text-center text-sm md:block">{rp(PRICE)}</span>
+            <span className="hidden text-center text-sm md:block">{rp(itemPrice)}</span>
             <div className="hidden justify-center md:flex">
               <Qty qty={qty} setQty={setQty} />
             </div>
             <span className="hidden text-center text-sm font-medium text-primary md:block">
-              {rp(PRICE * qty)}
+              {rp(itemPrice * qty)}
             </span>
             <div className="hidden flex-col items-center gap-1 text-sm md:flex">
               <button
@@ -234,11 +241,11 @@ function CartPage() {
                     localStorage.setItem(
                       "kingz_checkout",
                       JSON.stringify({
-                        productId: 1,
-                        name: productTitle,
-                        price: PRICE,
+                        productId: product?.id || 1,
+                        name: itemTitle,
+                        price: itemPrice,
                         quantity: qty,
-                        image: photos[0],
+                        image: itemImage,
                       }),
                     );
                   } catch {

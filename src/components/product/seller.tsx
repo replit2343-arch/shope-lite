@@ -1,9 +1,16 @@
 import { MessageSquare, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useShop } from "@/lib/shop-store";
+import { useShop, type Shop } from "@/lib/shop-store";
 
-export function Seller({ onAction }: { onAction: (action: "chat" | "store") => void }) {
-  const shop = useShop();
+export function Seller({
+  shop: propShop,
+  onAction,
+}: {
+  shop?: Shop;
+  onAction: (action: "chat" | "store") => void;
+}) {
+  const storeShop = useShop();
+  const shop = propShop || storeShop;
   const stats = [
     ["Penilaian", shop.rating],
     ["Persentase Chat Dibalas", shop.chatRate],

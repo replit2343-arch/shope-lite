@@ -18,7 +18,8 @@ import { ProductDetails } from "@/components/product/details";
 import { ProductReviews } from "@/components/product/reviews";
 import { Stars } from "@/components/product/stars";
 import { photos, productTitle } from "@/components/product/product-data";
-import { useProducts, useShop } from "@/lib/shop-store";
+import { initStoreData, useProducts, useShop } from "@/lib/shop-store";
+import { getStoreServerData } from "@/lib/server-store";
 import { ProductList } from "@/components/product/product-list";
 import { formatRM, normalizePriceRM, DEFAULT_PRODUCT_PRICE } from "@/lib/currency";
 
@@ -43,15 +44,37 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    const data = await getStoreServerData();
+    if (data) {
+      initStoreData(data);
+    }
+    return data;
+  },
   component: Index,
 });
 
 type Panel =
   "cart" | "buy" | "chat" | "store" | "report" | "shipping" | "protection" | "media" | null;
 function Index() {
+  const loaderData = Route.useLoaderData();
+  const storeShop = useShop();
+  const storeProducts = useProducts();
+
+  useEffect(() => {
+    if (loaderData) {
+      initStoreData(loaderData);
+    }
+  }, [loaderData]);
+
   const navigate = useNavigate();
-  const shop = useShop();
-  const products = useProducts();
+  const shop = loaderData?.shop?.name ? loaderData.shop : storeShop;
+  const products =
+    loaderData?.products && loaderData.products.length > 0 ? loaderData.products : storeProducts;
+  const reviews =
+    loaderData?.testimonials && loaderData.testimonials.length > 0
+      ? loaderData.testimonials
+      : undefined;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const product = products.find((p) => p.id === selectedId) ?? products[0];
   const name = product?.name ?? productTitle;
@@ -237,9 +260,10 @@ function Index() {
           </div>
         </div>
       </section>
-      <Seller onAction={setPanel} />
+      <Seller shop={shop} onAction={setPanel} />
       <ProductDetails product={product} />
       <ProductReviews
+        reviews={reviews}
         onMedia={(url) => {
           setMedia(url);
           setPanel("media");

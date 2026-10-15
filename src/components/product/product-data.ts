@@ -15,12 +15,19 @@ export const storePhoto = store;
 export const reviews = [
   {
     id: 1,
-    name: "arsaid",
-    date: "2026-07-20 16:00",
+    name: "r*****4",
+    date: "2025-10-10 14:22",
     avatar: avatar1,
-    comment: "Berfungsi dengan baik",
+    comment:
+      "Barang ori, charger berfungsi normal buat laptop Asus Vivobook saya. Seller ramah dan respon cepat!",
+    media: media,
+  },
+  {
+    id: 2,
+    name: "m*****y",
+    date: "2025-10-12 09:15",
+    avatar: avatar2,
+    comment: "Pengiriman cepat banget, packing aman berlapis bubble wrap tebal. Mantap!",
     media: "",
   },
-  { id: 2, name: "tika1095", date: "2025-09-11 10:17", avatar: avatar2, comment: "", media: media },
-  { id: 3, name: "r*****9", date: "", avatar: "", comment: "", media: "" },
 ];

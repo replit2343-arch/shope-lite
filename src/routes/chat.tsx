@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { SendHorizonal } from "lucide-react";
 import { storePhoto } from "@/components/product/product-data";
+import { useShop } from "@/lib/shop-store";
+
+import { getChatServerData } from "@/lib/server-store";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -21,29 +24,29 @@ export const Route = createFileRoute("/chat")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    return await getChatServerData();
+  },
   component: ChatPage,
 });
 
 type Message = { id: number; from: "seller" | "me"; text: string; time: string };
 
-const fallbackMessages: Message[] = [
-  {
-    id: 1,
-    from: "seller",
-    text: "Halo kak! Terima kasih sudah menghubungi Kingz Sparepart Computer. Ada yang bisa dibantu?",
-    time: "10.02",
-  },
-  { id: 2, from: "me", text: "Halo, Adaptor Asus A19-090P2A ini ready stock?", time: "10.04" },
-  {
-    id: 3,
-    from: "seller",
-    text: "Ready kak, 100% original baru dan bergaransi 6 bulan. Bisa langsung checkout ya.",
-    time: "10.05",
-  },
-];
-
 function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>(fallbackMessages);
+  const shop = useShop();
+  const loaderData = Route.useLoaderData();
+  const initial =
+    Array.isArray(loaderData) && loaderData.length > 0
+      ? loaderData.map(
+          (m: { id: number; sender?: "seller" | "me"; text: string; time: string }) => ({
+            id: m.id,
+            from: (m.sender || "seller") as "seller" | "me",
+            text: m.text,
+            time: m.time,
+          }),
+        )
+      : [];
+  const [messages, setMessages] = useState<Message[]>(initial);
   const [draft, setDraft] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -102,10 +105,10 @@ function ChatPage() {
   return (
     <div className="chat-page">
       <header className="chat-header">
-        <img src={storePhoto} alt="Kingz Sparepart Computer" className="chat-store-avatar" />
+        <img src={shop.photo || storePhoto} alt={shop.name} className="chat-store-avatar" />
         <div className="min-w-0">
-          <p className="chat-store-name">Kingz Sparepart Computer</p>
-          <p className="chat-store-status">Aktif 2 jam lalu</p>
+          <p className="chat-store-name">{shop.name}</p>
+          <p className="chat-store-status">{shop.activeText || "Aktif 2 jam lalu"}</p>
         </div>
       </header>
       <div className="chat-thread" ref={threadRef} aria-label="Percakapan dengan penjual">

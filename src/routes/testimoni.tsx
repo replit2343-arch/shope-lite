@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ThumbsUp, UserRound } from "lucide-react";
-import { useTestimonials } from "@/lib/shop-store";
+import { initTestimonialsData, useTestimonials } from "@/lib/shop-store";
+import { getTestimonialsServerData } from "@/lib/server-store";
 import { Stars } from "@/components/product/stars";
 
 export const Route = createFileRoute("/testimoni")({
@@ -21,11 +22,26 @@ export const Route = createFileRoute("/testimoni")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    const data = await getTestimonialsServerData();
+    if (data && Array.isArray(data) && data.length > 0) {
+      initTestimonialsData(data);
+    }
+    return data;
+  },
   component: TestimoniPage,
 });
 
 function TestimoniPage() {
-  const reviews = useTestimonials();
+  const loaderData = Route.useLoaderData();
+  const storeReviews = useTestimonials();
+
+  if (loaderData && Array.isArray(loaderData) && loaderData.length > 0) {
+    initTestimonialsData(loaderData);
+  }
+
+  const reviews =
+    loaderData && Array.isArray(loaderData) && loaderData.length > 0 ? loaderData : storeReviews;
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 5;
   return (
     <main className="testimoni-page">

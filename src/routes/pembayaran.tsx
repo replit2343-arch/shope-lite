@@ -26,6 +26,8 @@ import {
   SHIPPING_INSTANT_RM,
 } from "@/lib/currency";
 
+import { getPaymentsServerData } from "@/lib/server-store";
+
 export const Route = createFileRoute("/pembayaran")({
   head: () => ({
     meta: [
@@ -43,6 +45,9 @@ export const Route = createFileRoute("/pembayaran")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  loader: async () => {
+    return await getPaymentsServerData();
+  },
   component: CheckoutPage,
 });
 
@@ -271,8 +276,28 @@ const methodIcons = {
 };
 
 function CheckoutPage() {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>(defaultPayments);
-  const [selectedId, setSelectedId] = useState<number>(1);
+  const loaderPayments = Route.useLoaderData();
+  const getInitialPayments = (): PaymentMethodItem[] => {
+    if (Array.isArray(loaderPayments) && loaderPayments.length > 0) {
+      return loaderPayments.filter((m: PaymentMethodItem) => m.active !== false);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem("vps_cache_payments");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return defaultPayments;
+  };
+
+  const initialPayments = getInitialPayments();
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>(initialPayments);
+  const [selectedId, setSelectedId] = useState<number>(initialPayments[0]?.id || 1);
   const [shipping, setShipping] = useState("Reguler");
   const [checkoutItem, setCheckoutItem] = useState({
     name: productTitle,
@@ -314,7 +339,11 @@ function CheckoutPage() {
           const activeOnly = data.filter((m: PaymentMethodItem) => m.active !== false);
           if (activeOnly.length > 0) {
             setPaymentMethods(activeOnly);
-            setSelectedId(activeOnly[0].id);
+            try {
+              sessionStorage.setItem("vps_cache_payments", JSON.stringify(activeOnly));
+            } catch {
+              // ignore
+            }
           }
         }
       })
