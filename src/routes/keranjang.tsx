@@ -85,7 +85,7 @@ function CartPage() {
 
   return (
     <main className="min-h-screen bg-muted/50 px-2 py-4 sm:px-4 md:py-6">
-      <div className="mx-auto max-w-[1200px] space-y-3 pb-36 md:pb-6">
+      <div className="mx-auto max-w-[1200px] space-y-3 pb-40 md:pb-6">
         <Link to="/" className="inline-block text-sm text-primary hover:underline">
           ← Kembali ke produk
         </Link>
@@ -175,7 +175,7 @@ function CartPage() {
         </section>
 
         {/* Summary */}
-        <section className="fixed inset-x-0 bottom-0 z-30 rounded-t-lg bg-card text-sm shadow-[0_-4px_16px_rgba(0,0,0,0.08)] border-t md:sticky md:mt-6 md:rounded-sm">
+        <section className="fixed inset-x-0 bottom-[56px] z-30 rounded-t-lg bg-card text-sm shadow-[0_-4px_16px_rgba(0,0,0,0.08)] border-t md:sticky md:bottom-0 md:mt-6 md:rounded-sm">
           <div className="flex items-center justify-between gap-3 border-b border-dashed px-3 py-3 sm:px-5 md:justify-end md:gap-16">
             <span className="flex items-center gap-2 font-medium sm:text-base">
               <Ticket className="h-5 w-5 text-primary" />

@@ -926,6 +926,61 @@ export const db = {
     return msg;
   },
 
+  async updateChatMessage(
+    id: number,
+    fields: Partial<ChatMessageRow>,
+  ): Promise<ChatMessageRow | null> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        const sets: string[] = [];
+        const vals: unknown[] = [];
+        let i = 1;
+        if (fields.sender !== undefined) {
+          sets.push(`sender = $${i++}`);
+          vals.push(fields.sender);
+        }
+        if (fields.text !== undefined) {
+          sets.push(`text = $${i++}`);
+          vals.push(fields.text);
+        }
+        if (fields.time !== undefined) {
+          sets.push(`time = $${i++}`);
+          vals.push(fields.time);
+        }
+        vals.push(id);
+        const res = await pool.query(
+          `UPDATE chat_messages SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
+          vals,
+        );
+        if (res.rows.length > 0) return res.rows[0];
+      } catch (err) {
+        console.warn("Error updating chat message in Postgres:", err);
+      }
+    }
+
+    const idx = memoryStore.chatMessages.findIndex((m) => m.id === id);
+    if (idx !== -1) {
+      memoryStore.chatMessages[idx] = { ...memoryStore.chatMessages[idx]!, ...fields };
+      return memoryStore.chatMessages[idx]!;
+    }
+    return null;
+  },
+
+  async deleteChatMessage(id: number): Promise<boolean> {
+    const pool = getPool();
+    if (pgConnected && pool) {
+      try {
+        await pool.query("DELETE FROM chat_messages WHERE id = $1", [id]);
+        return true;
+      } catch (err) {
+        console.warn("Error deleting chat message from Postgres:", err);
+      }
+    }
+    memoryStore.chatMessages = memoryStore.chatMessages.filter((m) => m.id !== id);
+    return true;
+  },
+
   async getTestimonials(): Promise<TestimonialRow[]> {
     const pool = getPool();
     if (pgConnected && pool) {

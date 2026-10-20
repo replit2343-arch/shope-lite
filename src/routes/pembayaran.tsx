@@ -263,21 +263,26 @@ function CheckoutPage() {
   const shop = useShop();
   const loaderPayments = Route.useLoaderData();
   const getInitialPayments = (): PaymentMethodItem[] => {
+    let raw = defaultPayments;
     if (Array.isArray(loaderPayments) && loaderPayments.length > 0) {
-      return loaderPayments.filter((m: PaymentMethodItem) => m.active !== false);
-    }
-    if (typeof window !== "undefined") {
+      raw = loaderPayments;
+    } else if (typeof window !== "undefined") {
       try {
-        const raw = sessionStorage.getItem("vps_cache_payments");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const cached = sessionStorage.getItem("vps_cache_payments");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) raw = parsed;
         }
       } catch {
         // ignore
       }
     }
-    return defaultPayments;
+    return raw
+      .filter((m: PaymentMethodItem) => m.active !== false)
+      .map((m: PaymentMethodItem) => ({
+        ...m,
+        holder: m.kind === "cod" ? m.holder : shop.name,
+      }));
   };
 
   const initialPayments = getInitialPayments();
@@ -374,7 +379,7 @@ function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-muted/50 px-2 py-4 sm:px-4 md:py-6">
-      <div className="mx-auto max-w-[1200px] space-y-3 pb-32 md:pb-0">
+      <div className="mx-auto max-w-[1200px] space-y-3 pb-36 md:pb-0">
         <Link
           to="/keranjang"
           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -552,7 +557,7 @@ function CheckoutPage() {
         </section>
 
         {/* Sticky pay bar (mobile) / inline (desktop) */}
-        <section className="fixed inset-x-0 bottom-0 z-20 rounded-sm bg-card shadow-[0_-4px_12px_-6px_color-mix(in_oklab,var(--foreground)_20%,transparent)] md:sticky md:mt-3">
+        <section className="fixed inset-x-0 bottom-[56px] z-20 rounded-sm bg-card shadow-[0_-4px_12px_-6px_color-mix(in_oklab,var(--foreground)_20%,transparent)] md:sticky md:bottom-0 md:mt-3">
           <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-5 md:justify-end md:gap-6">
             <div className="min-w-0 text-left">
               <span className="block text-xs sm:hidden">Total Pembayaran</span>

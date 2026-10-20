@@ -252,6 +252,21 @@ export async function handleApiFetch(request: Request): Promise<Response | null>
       return Response.json(msg, { status: 201, headers });
     }
 
+    if (path.startsWith("/api/chat/") && request.method === "PUT") {
+      const id = Number(path.replace("/api/chat/", ""));
+      const body = await request.json().catch(() => ({}));
+      const updated = await db.updateChatMessage(id, body);
+      if (!updated)
+        return Response.json({ error: "Pesan tidak ditemukan" }, { status: 404, headers });
+      return Response.json(updated, { headers });
+    }
+
+    if (path.startsWith("/api/chat/") && request.method === "DELETE") {
+      const id = Number(path.replace("/api/chat/", ""));
+      await db.deleteChatMessage(id);
+      return Response.json({ success: true }, { headers });
+    }
+
     if (path === "/api/testimonials" && request.method === "GET") {
       const list = await db.getTestimonials();
       return Response.json(list, { headers });

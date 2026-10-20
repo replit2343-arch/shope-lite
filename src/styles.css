@@ -780,8 +780,8 @@ body {
   display: flex;
   flex-direction: column;
   max-width: 860px;
-  height: calc(100dvh - 56px);
-  margin: 0 auto;
+  height: calc(100dvh - 112px);
+  margin: 0 auto 56px;
   background: var(--card);
 }
 .chat-header {
