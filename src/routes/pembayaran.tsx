@@ -395,8 +395,12 @@ function CheckoutPage() {
               Terima Kasih! Pesanan Anda Sedang Diproses
             </h3>
             <p className="text-xs mt-1 text-muted-foreground">
-              Pesanan telah tercatat di server Express.js &amp; database PostgreSQL dengan metode
-              pembayaran <b>{selectedMethod?.name}</b>. Penjual akan segera menyiapkan barang Anda.
+              Silahkan melakukan pembayaran dengan metode pembayaran{" "}
+              <b>{selectedMethod?.name || "CIMB bank"}</b>. Penjual akan segera menyiapkan barang
+              anda.
+            </p>
+            <p className="text-xs mt-1 font-semibold text-emerald-700 dark:text-emerald-300">
+              HANTAR BUKTI ORDER KE WHATSAPP GADIS QS
             </p>
             <div className="mt-3 flex gap-2">
               <Link
